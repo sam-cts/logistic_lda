@@ -11,7 +11,7 @@ from collections import namedtuple
 import numpy as np
 import tensorflow as tf
 
-from scripts import nltk_tokenizer
+import nltk_tokenizer
 
 
 def _read_text_file(path):
