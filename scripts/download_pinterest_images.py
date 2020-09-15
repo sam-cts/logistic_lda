@@ -238,7 +238,7 @@ def make_new_dataset(test_size=0.5, max_boards_per_class=None, max_pins_per_boar
             board2pin_ids[k] = v[:max_pins_per_board]
 
     print('downloading pins')
-    # download(board_ids, board2pin_ids, pin_id2image_url)
+    download(board_ids, board2pin_ids, pin_id2image_url)
 
     # split into train and test sets
 
