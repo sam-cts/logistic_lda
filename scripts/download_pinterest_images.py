@@ -258,4 +258,4 @@ def make_new_dataset(test_size=0.5, max_boards_per_class=None, max_pins_per_boar
 
 
 if __name__ == '__main__':
-    make_new_dataset(test_size=0.2, max_boards_per_class=None, max_pins_per_board=None)
+    make_new_dataset(test_size=0.2, max_boards_per_class=50, max_pins_per_board=50)
