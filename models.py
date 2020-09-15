@@ -326,7 +326,8 @@ def logistic_lda_online(features, labels, mode, params):
         # convert string labels to integers
         author_topics = topic_table.lookup(features['author_topic'])
         item_topics = topic_table.lookup(features['item_topic'])
-
+        print(f"type of params[author_ids]    :{type(params['author_ids'])}")
+        print(f"type of features['author_id'] :{features['author_id'].dtype}")
         # convert author IDs to low integers
         author_table = utils.create_table(
             keys=params['author_ids'],
