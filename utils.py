@@ -46,7 +46,6 @@ def create_table(keys, values=None, name=None):
 
     if values is None:
         values = np.arange(len(keys), dtype=np.int64)
-
     return tf.contrib.lookup.HashTable(
         tf.contrib.lookup.KeyValueTensorInitializer(keys=keys, values=values), -1, name=name)
 

@@ -2,3 +2,5 @@ __pycache__
 data
 metadata_new
 predictions.csv
+data_debug
+notebooks

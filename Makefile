@@ -2,6 +2,7 @@ DATA_DIR:='data'
 METADATA_DIR:='metadata_new'
 TRAINING_DATASET_NG20:='tokenized_ng20_train.pkl'
 TRAINING_DATASET_PINTEREST:='tf_pinterest_train'
+TRAINING_DATASET_CHIPTYPE:='tf_chiptype_train'
 
 # this would be the value for variables that should not be used by the models
 INF:=$(shell python -c "import sys; print(-sys.maxsize -1);")
@@ -322,6 +323,101 @@ search_pinterest_mlp:
 		--embedding 'mobilenet_v2' ; \
 	python evaluate.py \
 		--experiment_name 'pinterest_mlp_'${EXP_ID} \
+		--evaluate_unsupervised 0 \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR}
+
+chiptype_supervised:
+	$(eval EXP_ID:=$(shell python -c "import random; print(random.randint(0, 100000));")) \
+	python train.py \
+		--experiment_name 'chiptype_supervised_'${EXP_ID} \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR} \
+		--filename ${TRAINING_DATASET_CHIPTYPE} \
+		--output_file 'validation.txt' \
+		--model 'logistic_lda_online' \
+		--vocab_file '' \
+		--vocab_size ${INF} \
+		--batch_size $(shell python -c "import random; print(random.choice([8, 16]));") \
+		--author_topic_weight $(shell python -c "import random; print(random.choice([4000., 8000.0]));") \
+		--topic_bias_regularization $(shell python -c "import random; print(random.choice([1., 5.]));") \
+		--model_regularization $(shell python -c "import random; print(random.choice([0., 5., 20., 100.]));") \
+		--initial_learning_rate $(shell python -c "import random; print(random.choice([0.003, 0.001]));") \
+		--learning_rate_decay $(shell python -c "import random; print(random.choice([0.8, 0.9, 0.7]));") \
+		--learning_rate_decay_steps 2000 \
+		--max_steps $(shell python -c "import random; print(random.choice([50000, 100000]));") \
+		--num_valid 2000 \
+		--items_per_author 100 \
+		--n_author_topic_iterations $(shell python -c "import random; print(random.choice([1, 4]));") \
+		--use_author_topics 1 \
+		--n_unsupervised_topics ${INF} \
+		--hidden_units $(shell python -c "import random; print(random.choice(['128', '256', '512', '256 128']));") \
+		--embedding 'mobilenet_v2' ; \
+	python evaluate.py \
+		--experiment_name 'chiptype_supervised_'${EXP_ID} \
+		--evaluate_unsupervised 0 \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR}
+
+chiptype_unsupervised:
+	python train.py \
+		--experiment_name 'chiptype_unsupervised' \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR} \
+		--filename ${TRAINING_DATASET_CHIPTYPE} \
+		--output_file '' \
+		--model 'logistic_lda_online' \
+		--vocab_file '' \
+		--vocab_size ${INF} \
+		--batch_size 4 \
+		--author_topic_weight 1. \
+		--topic_bias_regularization 0.9 \
+		--model_regularization 1000. \
+		--initial_learning_rate 0.0001 \
+		--learning_rate_decay 0.8 \
+		--learning_rate_decay_steps 2000 \
+		--max_steps 50000 \
+		--num_valid 0 \
+		--items_per_author 100 \
+		--n_author_topic_iterations 1 \
+		--use_author_topics 0 \
+		--n_unsupervised_topics 8 \
+		--hidden_units 128 \
+		--embedding 'mobilenet_v2' ; \
+	python evaluate.py \
+		--experiment_name 'chiptype_unsupervised' \
+		--evaluate_unsupervised 1 \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR}
+
+chiptype_supervised_custom:
+	$(eval EXP_ID:=$(shell python -c "import random; print(random.randint(0, 100000));")) \
+	python train.py \
+		--experiment_name 'chiptype_supervised_custom_'${EXP_ID} \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR} \
+		--filename ${TRAINING_DATASET_CHIPTYPE} \
+		--output_file 'validation.txt' \
+		--model 'logistic_lda_online' \
+		--vocab_file '' \
+		--vocab_size ${INF} \
+		--batch_size $(shell python -c "import random; print(random.choice([8, 16]));") \
+		--author_topic_weight $(shell python -c "import random; print(random.choice([4000., 8000.0]));") \
+		--topic_bias_regularization 5. \
+		--model_regularization 20. \
+		--initial_learning_rate 0.003 \
+		--learning_rate_decay 0.9 \
+		--learning_rate_decay_steps 2000 \
+		--max_steps 50000 \
+		--num_valid 2000 \
+		--items_per_author 100 \
+		--n_author_topic_iterations 1 \
+		--use_author_topics 1 \
+		--n_unsupervised_topics ${INF} \
+		--hidden_units '512' \
+		--embedding 'mobilenet_v2' ; \
+	python evaluate.py \
+		--experiment_name 'chiptype_supervised_'${EXP_ID} \
 		--evaluate_unsupervised 0 \
 		--data_dir ${DATA_DIR} \
 		--metadata_dir ${METADATA_DIR}

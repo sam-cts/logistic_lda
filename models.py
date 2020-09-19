@@ -315,9 +315,10 @@ def logistic_lda_online(features, labels, mode, params):
 
     n_authors = len(params['author_ids'])
     n_topics = len(params['topics']) if params['n_unsupervised_topics'] <= 0 else params['n_unsupervised_topics']
-
+    print(params['n_unsupervised_topics'])
     with tf.name_scope('preprocessing'):
         # lookup table which maps topics to indices and missing topics to -1
+        print(params['topics'])
         topic_table = utils.create_table(
             keys=params['topics'] + [''],
             values=list(range(n_topics)) + [-1],

@@ -212,6 +212,129 @@ def evaluate_unsupervised_pinterest(dataset, meta_info, args):
     return 0
 
 
+def evaluate_unsupervised_chiptype(dataset, meta_info, args):
+    def get_dataset_iterator():
+        return dataset.make_one_shot_iterator().get_next()
+
+    classifier = tf.estimator.Estimator(
+        model_fn=getattr(models, args.model),
+        params={
+            'hidden_units': args.hidden_units,
+            'learning_rate': 0.0,
+            'decay_rate': 0.0,
+            'decay_steps': 0,
+            'alpha': args.topic_bias_regularization,
+            'model_regularization': 0.0,
+            'author_topic_weight': args.author_topic_weight,
+            'items_per_author': args.items_per_author,
+            'n_author_topic_iterations': args.n_author_topic_iterations,
+            'embedding': getattr(embeddings, args.embedding),
+            'use_author_topics': False,
+            'n_unsupervised_topics': args.n_unsupervised_topics,
+            **meta_info
+        },
+        warm_start_from=model_dir
+    )
+
+    # if stochastic VI, we need training steps to update the statistics, othw we don't
+    max_steps = 1 if '_ce' in args.model else None
+    classifier.train(get_dataset_iterator, max_steps=max_steps)
+
+    author_predictions, author_topics, author_ids = [], [], []
+    item_predictions, item_unbiased_predictions, item_probabilities, item_unbiased_probabilities, item_topics, item_ids = [], [], [], [], [], []
+
+    # get labels and predictions
+    for prediction in classifier.predict(get_dataset_iterator, yield_single_examples=False):
+        id = [prediction['author_id']] if prediction['author_id'].shape == () else list(prediction['author_id'])
+        p = [prediction['author_prediction']] if prediction['author_prediction'].shape == () else list(
+            prediction['author_prediction'])
+
+        author_predictions.extend(p)
+        author_ids.extend(id)
+        author_topics.extend(list(prediction['author_topic']))
+        item_predictions.extend(list(prediction['item_prediction']))
+        item_unbiased_predictions.extend(list(prediction.get('item_unbiased_prediction', [-1] * len(id))))
+        item_probabilities.extend(list(prediction['item_probability']))
+        item_unbiased_probabilities.extend(list(prediction['item_unbiased_probability']))
+        item_topics.extend(list(prediction['item_topic']))
+        item_ids.extend(list(prediction['item_id']))
+
+    item2pred, item2prob = {}, {}
+    for i in range(len(item_ids)):
+        item2pred[item_ids[i]] = item_unbiased_predictions[i]
+        item2prob[item_ids[i]] = item_unbiased_probabilities[i]
+
+    topic2word_prob = defaultdict(list)
+    for k, v in item2pred.items():
+        topic2word_prob[v].append((k, item2prob[k]))
+
+    for topic in topic2word_prob.keys():
+        values = topic2word_prob[topic]
+        sorted_by_prob = sorted(values, key=lambda tup: tup[1], reverse=True)
+        print(topic, sorted_by_prob[:20])
+
+    MAX_IMAGES = 20
+    IMG_W = 224
+    BORDER_W = 2
+    IMG_NEW_W = 2 * BORDER_W + IMG_W
+    TEXT_H, TEXT_W = 0, 0
+
+    for topic in topic2word_prob.keys():
+        print(topic)
+        values = topic2word_prob[topic]
+        sorted_by_prob = sorted(values, key=lambda tup: tup[1], reverse=True)
+        ids_only = [t[0] for t in sorted_by_prob][:MAX_IMAGES]
+        path_str = []
+        for id in ids_only:
+            img_name = str(id).replace('b\'', '').replace('\'', '') + '.jpg'
+            img_path = os.path.join(args.data_dir, 'pinterest_images', img_name)
+            path_str.append(img_path)
+
+        print(path_str)
+
+        W = IMG_NEW_W * len(path_str)
+        new_im = Image.new('RGB', (W + TEXT_W, IMG_NEW_W + TEXT_H), color='white')
+
+        i = 0
+        for j in range(TEXT_W, W, IMG_NEW_W):
+            im = Image.open(path_str[i])
+            im = ImageOps.expand(im, border=BORDER_W, fill='white')
+            new_im.paste(im, (j, 10))
+            i += 1
+        img_save_path = os.path.join(model_dir, '%s_tile.png' % int(topic))
+        new_im.save(img_save_path)
+        print('image saved in', img_save_path)
+
+    if args.output_predictions_file:
+        print('writing predictions into a csv file')
+        with tf.gfile.GFile(args.output_predictions_file, 'w') as handle:
+            writer = csv.writer(handle)
+            writer.writerow([
+                'author_id',
+                'author_topic',
+                'author_prediction',
+                'item_id',
+                'item_topic',
+                'item_prediction',
+                'item_unbiased_prediction',
+                'item_probability',
+                'item_unbiased_probability'])
+
+            for i in range(len(author_ids)):
+                writer.writerow([
+                    author_ids[i],
+                    author_topics[i],
+                    author_predictions[i],
+                    item_ids[i],
+                    item_topics[i],
+                    item_predictions[i],
+                    item_unbiased_predictions[i],
+                    item_probabilities[i],
+                    item_unbiased_probabilities[i]])
+
+    return 0
+
+
 def evaluate_supervised(dataset, meta_info, args, results, subset):
     def get_dataset_iterator():
         return dataset.make_one_shot_iterator().get_next()
@@ -278,6 +401,13 @@ def evaluate_supervised(dataset, meta_info, args, results, subset):
 
     # author prediction is repeated n_items times
     results['accuracy_author_weighted_%s' % subset] = utils.accuracy(author_predictions, author_topics)
+
+    weights = [1.0 / author2nitems[author_id] for author_id in author_ids]
+    results['accuracy_item_%s' % subset] = utils.accuracy(item_predictions, item_topics,
+                                                            weights)
+
+    # author prediction is repeated n_items times
+    results['accuracy_item_weighted_%s' % subset] = utils.accuracy(item_predictions, item_topics)
 
     pprint.pprint(results)
 
@@ -423,5 +553,23 @@ if __name__ == '__main__':
                                                                                  num_valid=0,
                                                                                  embedding=args.embedding)
             evaluate_unsupervised_pinterest(dataset_test, meta_info_test, args)
+        elif 'chiptype' in filename_train:
+            dataset_train, _, meta_info_train, word2idx = data_iter_var.create_tf_dataset(data_dir=args.data_dir,
+                                                                                          filename=filename_train,
+                                                                                          vocab_size=args.vocab_size,
+                                                                                          max_epochs=1,
+                                                                                          batch_size=args.batch_size,
+                                                                                          num_valid=args.num_valid,
+                                                                                          embedding=args.embedding,
+                                                                                          word2idx=word2idx)
+            dataset_test, _, meta_info_test, _ = data_iter_var.create_tf_dataset(data_dir=args.data_dir,
+                                                                                 filename=filename_test,
+                                                                                 word2idx=word2idx,
+                                                                                 batch_size=args.batch_size,
+                                                                                 max_epochs=1,
+                                                                                 num_valid=0,
+                                                                                 embedding=args.embedding)
+            evaluate_unsupervised_chiptype(dataset_test, meta_info_test, args)
+
         else:
             raise ValueError('no evaluation method for this dataset')

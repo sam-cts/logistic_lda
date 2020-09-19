@@ -66,7 +66,7 @@ if __name__ == '__main__':
                         help='Number of variational inference iterations to infer missing author labels')
     parser.add_argument('--use_author_topics', type=int, default=0,
                         help='Supervised or unsupervised?')
-    parser.add_argument('--n_unsupervised_topics', type=int, default=50,
+    parser.add_argument('--n_unsupervised_topics', type=int, default=-1,
                         help='Number of topics when trained unsupervisedly')
     parser.add_argument('--hidden_units', type=int, nargs='+', default=[128],
                         help='List of hidden units defining the neural network architecture')
@@ -170,6 +170,7 @@ if __name__ == '__main__':
         author_predictions = []
         author_topics = []
         author_ids = []
+        item_predictions, item_unbiased_predictions, item_probabilities, item_unbiased_probabilities, item_topics, item_ids = [], [], [], [], [], []
 
         for prediction in classifier.predict(get_dataset_iterator, yield_single_examples=False):
             id = [prediction['author_id']] if prediction['author_id'].shape == () else list(prediction['author_id'])
@@ -179,6 +180,12 @@ if __name__ == '__main__':
             author_predictions.extend(p)
             author_ids.extend(id)
             author_topics.extend(list(prediction['author_topic']))
+            item_predictions.extend(list(prediction['item_prediction']))
+            item_probabilities.extend(list(prediction['item_probability']))
+            item_topics.extend(list(prediction['item_topic']))
+            item_ids.extend(list(prediction['item_id']))
+            item_unbiased_predictions.extend(list(prediction.get('item_unbiased_prediction', [-1] * len(id))))
+            item_unbiased_probabilities.extend(list(prediction.get('item_unbiased_probability', [-1] * len(id))))
 
         author2nitems = {}
         for id in set(author_ids):
@@ -186,6 +193,8 @@ if __name__ == '__main__':
 
         weights = [1.0 / author2nitems[author_id] for author_id in author_ids]
         results['accuracy_author_validation'] = utils.accuracy(author_predictions, author_topics,
+                                                               weights)
+        results['accuracy_item_validation'] = utils.accuracy(item_predictions, item_topics,
                                                                weights)
         pprint.pprint(results)
 
