@@ -2,7 +2,7 @@ DATA_DIR:='data'
 METADATA_DIR:='metadata_new'
 TRAINING_DATASET_NG20:='tokenized_ng20_train.pkl'
 TRAINING_DATASET_PINTEREST:='tf_pinterest_train'
-
+TRAINING_DATASET_INTERIM:='tokenized_interim_train.pkl'
 # this would be the value for variables that should not be used by the models
 INF:=$(shell python -c "import sys; print(-sys.maxsize -1);")
 
@@ -323,5 +323,39 @@ search_pinterest_mlp:
 	python evaluate.py \
 		--experiment_name 'pinterest_mlp_'${EXP_ID} \
 		--evaluate_unsupervised 0 \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR}
+
+
+interim_unsupervised:
+	$(eval EXP_ID:=$(shell python -c "import random; print(random.randint(0, 100000));")) \
+	python train.py \
+		--experiment_name 'interim_unsupervised_'${EXP_ID} \
+		--data_dir ${DATA_DIR} \
+		--metadata_dir ${METADATA_DIR} \
+		--filename ${TRAINING_DATASET_INTERIM} \
+		--output_file '' \
+		--model 'logistic_lda' \
+		--batch_size 16 \
+		--author_topic_weight 1. \
+		--topic_bias_regularization 5.0 \
+		--model_regularization 100.0 \
+		--initial_learning_rate 0.0005 \
+		--learning_rate_decay 0.8 \
+		--learning_rate_decay_steps 2000 \
+		--max_steps 50000 \
+		--vocab_file 'vocab_interim.pkl' \
+		--vocab_size  ${INF} \
+		--num_valid 0 \
+		--items_per_author ${INF} \
+		--n_author_topic_iterations ${INF} \
+		--use_author_topics 0 \
+		--n_unsupervised_topics 10 \
+		--hidden_units '128' \
+		--embedding 'glove' ; \
+	python evaluate.py \
+		--experiment_name 'interim_unsupervised_'${EXP_ID} \
+		--evaluate_unsupervised 1 \
+		--vocab_file 'vocab_interim.pkl' \
 		--data_dir ${DATA_DIR} \
 		--metadata_dir ${METADATA_DIR}

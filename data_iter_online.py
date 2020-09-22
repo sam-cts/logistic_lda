@@ -102,6 +102,7 @@ def create_tf_dataset(data_dir, filename, num_valid=0, max_epochs=None, batch_si
         return dataset_train, dataset_valid, meta_info, None
 
     else:
+        print(f"no validation")
         if cache:
             dataset = dataset.cache()
         dataset = dataset.shuffle(1000).repeat(max_epochs).batch(batch_size)

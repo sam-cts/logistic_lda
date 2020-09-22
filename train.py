@@ -38,7 +38,7 @@ if __name__ == '__main__':
                         help='Training dataset, e.g. .pkl file for Newsgroups 20 or a TFRecords file/folder')
     parser.add_argument('--output_file', type=str, default='validation.txt',
                         help='Where to write validation results')
-    parser.add_argument('--vocab_file', type=str, default='vocab2K.pkl',
+    parser.add_argument('--vocab_file', type=str, default=None,
                         help='Vocabulary file for News20')
     parser.add_argument('--vocab_size', type=int, default=5000,
                         help='Size of the vocabulary that will be created if there is no vocabulary given')

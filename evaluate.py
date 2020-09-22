@@ -401,7 +401,7 @@ if __name__ == '__main__':
             json.dump(results, handle, indent=4)
 
     else:
-        if 'ng20' in filename_train:
+        if 'ng20' in filename_train or 'interim' in filename_train:
             print('Computing topics for vocabulary words')
             dataset_vocab, meta_info_vocab, _ = data_iter_var.create_tf_vocab_dataset(word2idx,
                                                                                       data_dir=args.data_dir)

@@ -85,14 +85,13 @@ def create_data_record(data_dir, filename, num_valid, word2idx, vocab_size, glov
     x, y = data_utils.shuffle_datasets(x, y)
     topic_name2number = dict(zip(topic_names, range(len(topic_names))))
     topic_number2name = dict(zip(range(len(topic_names)), topic_names))
-
+    print(topic_name2number)
+    print(topic_number2name)
     # make a vocabulary of size vocab_size or use the one that is given
     word2idx, idx2word = data_utils.make_vocabulary(x, word2idx, vocab_size, glove_words)
     vocab_size = len(word2idx)
-
     # split documents into train and valid
     train_idxs, valid_idxs = data_utils.make_validation_split(x, y, num_valid)
-
     # filter out empty docs
     train_idxs, valid_idxs = data_utils.remove_empty_docs_from_indexing(x, train_idxs, valid_idxs, word2idx)
 
@@ -124,7 +123,6 @@ def make_data_dict(x, y, word2idx, train_idxs, valid_idxs, topic_number2name, se
     embeddings = []
     author_id, author_topic = [], []
     item_id, item_topic = [], []
-
     item_ids_counter = 0
     author2nitems = defaultdict(lambda: 0)
     for i in valid_idxs + train_idxs:
@@ -138,7 +136,6 @@ def make_data_dict(x, y, word2idx, train_idxs, valid_idxs, topic_number2name, se
         item_topic.append([''] * len(words))
 
     n_valid_items = len(valid_idxs)
-
     features = {
         'embedding': embeddings,
         'author_id': author_id,
@@ -165,7 +162,7 @@ def create_tf_vocab_dataset(word2idx, data_dir, batch_size=16):
     author_id, author_topic = [], []
     item_id, item_topic = [], []
     author2nitems = {}
-
+    
     for k, v in word2idx.items():
         embeddings.append([v])
         author2nitems[v] = 1
