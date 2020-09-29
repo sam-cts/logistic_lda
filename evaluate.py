@@ -292,18 +292,18 @@ def evaluate_unsupervised_chiptype(dataset, meta_info, args):
 
         print(path_str)
 
-        W = IMG_NEW_W * len(path_str)
-        new_im = Image.new('RGB', (W + TEXT_W, IMG_NEW_W + TEXT_H), color='white')
+        # W = IMG_NEW_W * len(path_str)
+        # new_im = Image.new('RGB', (W + TEXT_W, IMG_NEW_W + TEXT_H), color='white')
 
-        i = 0
-        for j in range(TEXT_W, W, IMG_NEW_W):
-            im = Image.open(path_str[i])
-            im = ImageOps.expand(im, border=BORDER_W, fill='white')
-            new_im.paste(im, (j, 10))
-            i += 1
-        img_save_path = os.path.join(model_dir, '%s_tile.png' % int(topic))
-        new_im.save(img_save_path)
-        print('image saved in', img_save_path)
+        # i = 0
+        # for j in range(TEXT_W, W, IMG_NEW_W):
+        #     im = Image.open(path_str[i])
+        #     im = ImageOps.expand(im, border=BORDER_W, fill='white')
+        #     new_im.paste(im, (j, 10))
+        #     i += 1
+        # img_save_path = os.path.join(model_dir, '%s_tile.png' % int(topic))
+        # new_im.save(img_save_path)
+        # print('image saved in', img_save_path)
 
     if args.output_predictions_file:
         print('writing predictions into a csv file')
