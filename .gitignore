@@ -1,3 +1,5 @@
 __pycache__
-data
+data/*
+!data/data_20200823.pkl
 metadata_new
+predictions.csv
